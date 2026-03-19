@@ -1,0 +1,8 @@
+verf/**/.simvision/
+build/
+*.log
+*.key
+*.history
+*.d
+*waves*
+*old
