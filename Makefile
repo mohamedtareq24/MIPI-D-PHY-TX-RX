@@ -12,7 +12,7 @@ OPEN_TCL := scripts/open_project.tcl
 
 help:
 	@echo "Targets:"
-	@echo "  make syn TOP=<top_module>          # Reuse existing project and run synthesis"
+	@echo "  make syn TOP=<top_module>          # Create/open project in build dir and run synthesis"
 	@echo "  make open                          # Open project in Vivado GUI"
 	@echo "  make open_top TOP=<top_module>     # Open GUI and set top"
 	@echo "  make clean                         # Remove generated build directory"
@@ -45,4 +45,4 @@ open_top:
 		-top $(TOP)
 
 clean:
-	rm -rf *.log *.jou *.str
+	rm -rf $(BUILD_DIR) *.log *.jou *.str
