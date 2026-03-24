@@ -42,38 +42,56 @@ module tx_phy_top #(
     logic        hs_clk_i;
     logic        hs_clk_q;
     logic        hs_clk_q_gated;
+
+    tx_clk_ppi_if      clk_ppi_if();
+    tx_clk_analog_if   clk_analog_if();
+    tx_clk_d_phy_if    clk_d_phy_if();
+
+    tx_data_ppi_if     data_ppi_if();
+    tx_data_analog_if  data_analog_if();
+    tx_data_d_phy_if   data_d_phy_if();
+
+    // Bridge scalar control inputs from top-level into the lane interfaces.
+    assign clk_ppi_if.TxClkEsc_i            = TxClkEsc_i;
+    assign clk_ppi_if.ForceTXStopmode_i     = ForceTXStopmode_i;
+    assign clk_ppi_if.TxRequestHS_i         = TxRequestHS_i;
+    assign clk_ppi_if.TxUlpsClk_i           = TxUlpsClk_i;
+    assign clk_ppi_if.TxUlpsExit_i          = TxUlpsClkExit_i;
+
+    assign data_ppi_if.TxClkEsc_i           = TxClkEsc_i;
+    assign data_ppi_if.enable_i             = DataLaneEnable_i;
+    assign data_ppi_if.ForceTXStopmode_i    = ForceTXStopmode_i;
+    assign data_ppi_if.TxRequestHS_i        = TxRequestHS_i;
+    assign data_ppi_if.TxDataHS_i           = TxDataHS_i;
+    assign data_ppi_if.TxDataWidthHS_i      = TxDataWidthHS_i;
+    assign data_ppi_if.TxWordValidHS_i      = TxWordValidHS_i;
+    assign data_ppi_if.TxDataTransferEnHS_i = TxDataTransferEnHS_i;
+    assign data_ppi_if.TxRequestEsc_i       = TxRequestEsc_i;
+    assign data_ppi_if.TxTriggerEsc_i       = TxTriggerEsc_i;
+    assign data_ppi_if.TxUlpsEsc_i          = TxUlpsEsc_i;
+    assign data_ppi_if.TxUlpsExit_i         = TxUlpsDataExit_i;
+
+    assign clk_analog_if.clk_div            = clk_div8;
+    assign data_analog_if.tx_lane_clk_div_i = clk_div8;
+
+    // Bridge key digital outputs toward analog and top-level pins.
+    assign serializer_en    = data_analog_if.serializer_en_o;
+    assign parallel_data    = data_analog_if.parallel_data_o;
+    assign ddr_clk_buff_en  = clk_analog_if.ddr_clk_buff_en;
+    assign clk_LP_Dp_o      = clk_d_phy_if.clk_LP_Dp_o;
+    assign clk_LP_Dn_o      = clk_d_phy_if.clk_LP_Dn_o;
+    assign tx_lane_LP_Dp_o  = data_d_phy_if.tx_lane_LP_Dp_o;
+    assign tx_lane_LP_Dn_o  = data_d_phy_if.tx_lane_LP_Dn_o;
+
     // Digital wrapper instance
     tx_d_phy u_tx_d_phy (
         .arstn(arstn),
-        .TxClkEsc_i(TxClkEsc_i),
-        .ForceTXStopmode_i(ForceTXStopmode_i),
-        .TxRequestHS_i(TxRequestHS_i),
-        .TxUlpsClk_i(TxUlpsClk_i),
-        .TxUlpsClkExit_i(TxUlpsClkExit_i),
-        .DataLaneEnable_i(DataLaneEnable_i),
-        .TxDataHS_i(TxDataHS_i),
-        .TxDataWidthHS_i(TxDataWidthHS_i),
-        .TxWordValidHS_i(TxWordValidHS_i),
-        .TxDataTransferEnHS_i(TxDataTransferEnHS_i),
-        .TxRequestEsc_i(TxRequestEsc_i),
-        .TxTriggerEsc_i(TxTriggerEsc_i),
-        .TxUlpsEsc_i(TxUlpsEsc_i),
-        .TxUlpsDataExit_i(TxUlpsDataExit_i),
-        .clk_div_i(clk_div8), // Connects to analog clk_div8
-        // Outputs not used for analog path are left unconnected
-        .TxReadyHSClk_o(TxReadyHSClk_o),
-        .TxByteClkHS_o(TxByteClkHS_o),
-        .TxUlpsClkActive_n_o(TxUlpsClkActive_n_o),
-        .ClkStopState_o(ClkStopState_o),
-        .clk_LP_Dp_o(clk_LP_Dp_o),
-        .clk_LP_Dn_o(clk_LP_Dn_o),
-        .TxReadyHSData_o(TxReadyHSData_o),
-        .TxUlpsDataActive_n_o(TxUlpsDataActive_n_o),
-        .DataStopState_o(DataStopState_o),
-        .tx_lane_LP_Dp_o(tx_lane_LP_Dp_o),
-        .tx_lane_LP_Dn_o(tx_lane_LP_Dn_o),
-        .serializer_en_o(serializer_en),
-        .parallel_data_o(parallel_data)
+        .clk_ppi(clk_ppi_if),
+        .clk_analog(clk_analog_if),
+        .clk_d_phy(clk_d_phy_if),
+        .data_ppi(data_ppi_if),
+        .data_analog(data_analog_if),
+        .data_d_phy(data_d_phy_if)
     );
     // Analog top instance
     analog_top #(
@@ -84,10 +102,10 @@ module tx_phy_top #(
         .serializer_en_i(serializer_en),
         .parallel_data_i(parallel_data),
         .ddr_clk_buff_en_i(ddr_clk_buff_en),
-        .hs_data_dp_o(hs_data_dp_o),
-        .hs_data_dn_o(hs_data_dn_o),
-        .hs_clk_dp_o(hs_clk_dp_o),
-        .hs_clk_dn_o(hs_clk_dn_o),
+        .hs_data_dp_o(hs_data_Dp_o),
+        .hs_data_dn_o(hs_data_Dn_o),
+        .hs_clk_dp_o(hs_clk_Dp_o),
+        .hs_clk_dn_o(hs_clk_Dn_o),
         .clk_i_o(hs_clk_i),
         .clk_q_o(hs_clk_q),
         .clk_div8_o(clk_div8),
