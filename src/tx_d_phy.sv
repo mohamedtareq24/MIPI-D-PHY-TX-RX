@@ -1,10 +1,12 @@
 module tx_d_phy (
     input  logic                  arstn,
+    
     tx_clk_ppi_if.tx              clk_ppi,
-    tx_clk_analog_if.tx           clk_analog,
+    tx_clk_analog_if.digital      clk_analog,
     tx_clk_d_phy_if.tx_d_phy_lp   clk_d_phy,
+
     tx_data_ppi_if.tx             data_ppi,
-    tx_data_analog_if.tx          data_analog,
+    tx_data_analog_if.digital     data_analog,
     tx_data_d_phy_if.tx_d_phy_lp  data_d_phy
 );
 

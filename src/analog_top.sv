@@ -2,18 +2,14 @@ module analog_top #(
     parameter int unsigned SERIAL_CLK_PER = 8
 ) (
     input  logic       rstn_i,
-    input  logic       ref_clk_i,
 
-    // Digital-front-end interface
-    input  logic       serializer_en_i,
-    input  logic [7:0] parallel_data_i,
-    input  logic       ddr_clk_buff_en_i,
-
-    // High-speed differential outputs
-    output logic       hs_data_dp_o,
-    output logic       hs_data_dn_o,
-    output logic       hs_clk_dp_o,
-    output logic       hs_clk_dn_o,
+        // Clock Lane
+    tx_clk_analog_if.analog         clk_analog,
+    tx_clk_d_phy_if.tx_d_phy_hs     clk_d_phy,
+    
+    // Data Lane 
+    tx_data_analog_if.analog        data_analog,
+    tx_data_d_phy_if.tx_d_phy_hs    data_d_phy,
 
     // Exported clocks for top-level observability
     output logic       clk_i_o,
@@ -47,36 +43,41 @@ module analog_top #(
         .rstn_i(rstn_i),
         .clk_i(hs_clk_i),
         .clk_div8_i(clk_div8_o),
-        .en_i(serializer_en_i),
-        .parallel_data_i(parallel_data_i),
+        .en_i(data_analog.serializer_en_o),
+        .parallel_data_i(data_analog.parallel_data_o),
         .serial_data_o(hs_serial_data)
     );
 
     // Explicitly gate only the Q-phase clock with ddr_clk_buff_en.
     q_clock_gate u_q_clock_gate (
         .clk_q_i(hs_clk_q),
-        .en_i(ddr_clk_buff_en_i),
+        .en_i(clk_analog.ddr_clk_buff_en),
         .clk_q_gated_o(hs_clk_q_gated)
     );
 
     // Differential data output stage.
     diff_data_driver u_diff_data_driver (
-        .en_i(serializer_en_i),
+        .en_i(data_analog.serializer_en_o),
         .data_i(hs_serial_data),
-        .dp_o(hs_data_dp_o),
-        .dn_o(hs_data_dn_o)
+        .dp_o(data_d_phy.hs_data_Dp_o),
+        .dn_o(data_d_phy.hs_data_Dn_o)
     );
 
     // Differential clock output stage driven by gated Q-phase clock.
     diff_clk_driver u_diff_clk_driver (
-        .en_i(ddr_clk_buff_en_i),
+        .en_i(clk_analog.ddr_clk_buff_en),
         .clk_i(hs_clk_q_gated),
-        .dp_o(hs_clk_dp_o),
-        .dn_o(hs_clk_dn_o)
+        .dp_o(clk_d_phy.clk_HS_Dp_o),
+        .dn_o(clk_d_phy.clk_HS_Dn_o)
     );
 
     assign clk_i_o = hs_clk_i;
     assign clk_q_o = hs_clk_q;
+    assign pll_lock_o = rstn_i;
+
+    // Export byte-clock reference back into digital control interfaces.
+    assign clk_analog.clk_div = clk_div8_o;
+    assign data_analog.tx_lane_clk_div_i = clk_div8_o;
 
 endmodule
 

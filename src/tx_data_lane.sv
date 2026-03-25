@@ -1,7 +1,7 @@
 module tx_data_lane(
     input logic arstn, // Asynchronous reset, active low
     tx_data_ppi_if.tx               ppi,
-    tx_data_analog_if.tx            analog,
+    tx_data_analog_if.digital       analog,
     tx_data_d_phy_if.tx_d_phy_lp    d_phy
 );
 

@@ -2,7 +2,7 @@
 module tx_clock_lane (
     input logic arstn, // Asynchronous reset, active low
     tx_clk_ppi_if.tx            ppi,
-    tx_clk_analog_if.tx         analog,
+    tx_clk_analog_if.digital    analog,
     tx_clk_d_phy_if.tx_d_phy_lp d_phy
 );
     
