@@ -1,7 +1,11 @@
 class ppi_clk_driver extends uvm_driver #(ppi_clk_tr);
     `uvm_component_utils(ppi_clk_driver)
-    virtual ppi_clk_intf vif;
+    virtual tx_clk_ppi_if vif;
     localparam time WAKEUP_TIME = 1us;
+    localparam time ESC_CLK_PER = 50;
+
+    bit esc_clk = 0;
+    bit tx_clk_esc_en = 0;
 
     function new (string name =" ppi_clk_driver", uvm_component parent);
         super.new(name, parent);
@@ -9,7 +13,7 @@ class ppi_clk_driver extends uvm_driver #(ppi_clk_tr);
 
     function void build_phase (uvm_phase phase);
         super.build_phase(phase);
-        if (!uvm_config_db#(virtual ppi_clk_intf)::get(this, "", "vif", vif)) begin
+        if (!uvm_config_db#(virtual tx_clk_ppi_if)::get(this, "", "vif", vif)) begin
             `uvm_fatal("NOVIF", "Virtual clock interface not found")
         end
     endfunction
@@ -17,10 +21,31 @@ class ppi_clk_driver extends uvm_driver #(ppi_clk_tr);
 
 
     task run_phase(uvm_phase phase);
+        vif.TxClkEsc_i <= 1'b0;
+        vif.TxRequestHS_i <= 1'b0;
+        vif.ForceTXStopmode_i <= 1'b0;
+        vif.TxUlpsClk_i <= 1'b0;
+        vif.TxUlpsExit_i <= 1'b0;
+
+        fork
+            drive_esc_clk();
+            begin
+                forever begin
+                    seq_item_port.get_next_item(req);
+                    send_to_dut(req);
+                    seq_item_port.item_done();
+                end
+            end
+        join
+    endtask
+
+    task drive_esc_clk();
         forever begin
-            seq_item_port.get_next_item(req);
-            send_to_dut(req);
-            seq_item_port.item_done();
+            #(ESC_CLK_PER / 2) esc_clk = ~esc_clk;
+            if (tx_clk_esc_en)
+                vif.TxClkEsc_i <= esc_clk;
+            else
+                vif.TxClkEsc_i <= 1'b0;
         end
     endtask
 
@@ -39,39 +64,38 @@ class ppi_clk_driver extends uvm_driver #(ppi_clk_tr);
     endtask
 
     task hs_clk_enable();
-        wait (vif.stop_state == 1); // Wait for the clock lane to be in stop state
-        @(posedge vif.TxClkEsc);
-        vif.TxRequestHS <= 1;
+        wait (vif.StopState_o == 1); // Wait for the clock lane to be in stop state
+        @(posedge vif.TxClkEsc_i);
+        vif.TxRequestHS_i <= 1;
         
-        wait (vif.stop_state == 1); // Wait for the clock lane to be in stop state
+        wait (vif.StopState_o == 1); // Wait for the clock lane to be in stop state
     endtask
 
     task lane_enable();
-        vif.ForceTXStopmode <= 1;
-        vif.enable <= 1;
+        vif.ForceTXStopmode_i <= 1;
         #1420;
-        vif.tx_clk_esc_en <= 1;
+        tx_clk_esc_en <= 1;
         `uvm_info(get_name(), "waiting for stop state", UVM_LOW)
-        wait (vif.stop_state);
-        @(posedge vif.TxClkEsc);
-        vif.ForceTXStopmode <= 0;
-        repeat (10) @(posedge vif.TxClkEsc);
+        wait (vif.StopState_o);
+        @(posedge vif.TxClkEsc_i);
+        vif.ForceTXStopmode_i <= 0;
+        repeat (10) @(posedge vif.TxClkEsc_i);
 
-        wait (vif.stop_state == 1); // Wait for the clock lane to be in stop state
+        wait (vif.StopState_o == 1); // Wait for the clock lane to be in stop state
     endtask
 
     task send_ulps_clk_tr();
-        vif.TxUlpsExit <=  0;
-        wait (vif.stop_state == 1); // Wait for the clock lane to be in stop state
-        @(posedge vif.TxClkEsc);
-        vif.TxUlpsClk   <= 1;
+        vif.TxUlpsExit_i <= 0;
+        wait (vif.StopState_o == 1); // Wait for the clock lane to be in stop state
+        @(posedge vif.TxClkEsc_i);
+        vif.TxUlpsClk_i <= 1;
         #(req.ulps_active_delay);
-        @(posedge vif.TxClkEsc);
-        vif.TxUlpsExit  <=  1;
-        wait (vif.TxUlpsActive_n == 1); 
+        @(posedge vif.TxClkEsc_i);
+        vif.TxUlpsExit_i <= 1;
+        wait (vif.TxUlpsActive_n_o == 1);
         #WAKEUP_TIME;
-        @(posedge vif.TxClkEsc);
-        vif.TxUlpsClk <= 0;
-        wait (vif.stop_state == 1); // Wait for the clock lane to be in stop state
+        @(posedge vif.TxClkEsc_i);
+        vif.TxUlpsClk_i <= 0;
+        wait (vif.StopState_o == 1); // Wait for the clock lane to be in stop state
     endtask
 endclass

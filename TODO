@@ -5,7 +5,9 @@
 - [x] Design of TX Data Lane
 - [x] Use interfaces for ports
 - [x] Re build the top
-- [ ] 
+- [ ] Resolve the data lane CDC
+- [ ] Resolve the clock lane CDC
+ 
 
 ## Simulation and Modeling
 - [ ] Analog PHY simulation model (Refer to UG471 & UG472)
