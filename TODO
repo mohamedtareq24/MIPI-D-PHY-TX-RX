@@ -6,7 +6,7 @@
 - [x] Use interfaces for ports
 - [x] Re build the top
 - [ ] Resolve the data lane CDC
-- [ ] Resolve the clock lane CDC
+
  
 
 ## Simulation and Modeling
