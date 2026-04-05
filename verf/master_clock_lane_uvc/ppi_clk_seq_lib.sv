@@ -30,14 +30,14 @@ endclass
 
 class ppi_clk_hs_seq extends ppi_clk_base_seq;
     `uvm_object_utils(ppi_clk_hs_seq)
-
+    rand ppi_clk_tr tr;
     function new(string name = "ppi_clk_hs_seq");
         super.new(name);
     endfunction
 
     virtual task body();
-        ppi_clk_tr tr;
         tr = ppi_clk_tr::type_id::create("tr");
+        assert(tr.randomize()) else `uvm_fatal("RAND_FAIL", "Failed to randomize HS clock transaction");
         tr.transaction_type = HS_CLK;
         start_item(tr);
         finish_item(tr);

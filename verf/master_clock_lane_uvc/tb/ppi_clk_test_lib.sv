@@ -7,13 +7,17 @@ class ppi_clk_test_base extends uvm_test;
     function new(string name = "ppi_clk_test_base", uvm_component parent);
         super.new(name, parent);
     endfunction
-
     virtual function void build_phase(uvm_phase phase);
         super.build_phase(phase);
         clk_agent = ppi_clk_agent::type_id::create("clk_agent", this);
     endfunction
 
-    task run_phase(uvm_phase phase);
+    virtual function void end_of_elaboration_phase(uvm_phase phase);
+        uvm_top.print_topology();
+        factory.print();
+    endfunction 
+
+    task main_phase (uvm_phase phase);
         phase.raise_objection(this);
         clk_seq =ppi_clk_base_seq::type_id::create("clk_seq");
         clk_seq.start(clk_agent.clk_seq);
@@ -47,6 +51,14 @@ class ppi_clk_test_hs extends ppi_clk_test_base;
         set_type_override_by_type(ppi_clk_base_seq::get_type(), ppi_clk_hs_seq::get_type());
         super.build_phase(phase);
     endfunction
+
+    virtual task configure_phase(uvm_phase phase);
+        ppi_clk_en_seq en_seq;
+        phase.raise_objection(this);
+        en_seq = ppi_clk_en_seq::type_id::create("en_seq");
+        en_seq.start(clk_agent.clk_seq);
+        phase.drop_objection(this);
+    endtask
 endclass
 
 class ppi_clk_test_ulps extends ppi_clk_test_base;

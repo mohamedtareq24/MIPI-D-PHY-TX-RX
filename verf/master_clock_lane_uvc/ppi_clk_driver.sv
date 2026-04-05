@@ -52,7 +52,7 @@ class ppi_clk_driver extends uvm_driver #(ppi_clk_tr);
     task send_to_dut(ppi_clk_tr tr);
         case (tr.transaction_type)
             HS_CLK: begin
-                hs_clk_enable();
+                hs_clk_enable(tr);
             end
             ULPS_CLK: begin
                 send_ulps_clk_tr();
@@ -63,11 +63,14 @@ class ppi_clk_driver extends uvm_driver #(ppi_clk_tr);
         endcase
     endtask
 
-    task hs_clk_enable();
+    task hs_clk_enable(ppi_clk_tr tr);
         wait (vif.StopState_o == 1); // Wait for the clock lane to be in stop state
         @(posedge vif.TxClkEsc_i);
         vif.TxRequestHS_i <= 1;
-        
+        repeat(tr.num_cycles) @(posedge vif.TxByteClkHS_o);
+        `uvm_info(get_name(), $sformatf("Sent %0d HS clock cycles", tr.num_cycles), UVM_LOW);
+        @(posedge vif.TxClkEsc_i);
+        vif.TxRequestHS_i <= 0;
         wait (vif.StopState_o == 1); // Wait for the clock lane to be in stop state
     endtask
 

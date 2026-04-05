@@ -50,11 +50,11 @@ help:
 sim: $(RUN_DIR)
 	-$(XRUN) -f $(FILELIST) -top $(TOP) $(XRUN_LIB_OPTS) $(XRUN_OPTS) -l $(LOG_RUN) || echo "xrun exited with an error. Check $(LOG_RUN) for details."
 	@mkdir -p $(RUN_DIR)/cov_work
-	@if [ -d $(TEMP_DIR) ]; then \
+	@if [ -d $(TEMP_DIR) ] && [ "$$(ls -A $(TEMP_DIR) 2>/dev/null)" ]; then \
 		mv -f  $(TEMP_DIR)/* $(RUN_DIR)/cov_work; \
 		echo "Coverage files moved to $(RUN_DIR)/"; \
 	else \
-		echo "Directory $(TEMP_DIR) does not exist"; \
+		echo "No coverage files to move from $(TEMP_DIR)"; \
 	fi
 
 # Split flow (optional)
@@ -64,11 +64,11 @@ elab: $(RUN_DIR)
 run:
 	-$(XRUN) -f $(FILELIST) -top $(TOP) $(XRUN_LIB_OPTS) $(XRUN_OPTS) -l $(LOG_RUN) || echo "xrun exited with an error. Check $(LOG_RUN) for details."
 	@mkdir -p $(RUN_DIR)/cov_work
-	@if [ -d $(TEMP_DIR) ]; then \
+	@if [ -d $(TEMP_DIR) ] && [ "$$(ls -A $(TEMP_DIR) 2>/dev/null)" ]; then \
 		mv -f  $(TEMP_DIR)/* $(RUN_DIR)/cov_work; \
 		echo "Coverage files moved to $(RUN_DIR)/"; \
 	else \
-		echo "Directory $(TEMP_DIR) does not exist"; \
+		echo "No coverage files to move from $(TEMP_DIR)"; \
 	fi
 
 gui: $(RUN_DIR)
