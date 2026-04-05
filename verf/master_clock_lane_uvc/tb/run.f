@@ -23,4 +23,5 @@
 
 // Verification sources
 ./ppi_clk_pkg.sv
+./tb/clock_lane_assertions.sv
 ./tb/ppi_clk_tb_top.sv

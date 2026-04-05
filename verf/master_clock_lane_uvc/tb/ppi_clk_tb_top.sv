@@ -11,11 +11,14 @@ module ppi_clk_tb_top;
     logic arstn;
 
     initial begin
+        arstn = 0;
+        #100;
         arstn = 1;
         #100;
         arstn = 0;
         #100;
         arstn = 1;
+    
     end
 
 
@@ -31,6 +34,17 @@ module ppi_clk_tb_top;
     .data_d_phy_lp(data_d_phy_if),
     .data_d_phy_hs(data_d_phy_if)
     );
+
+    bind tx_d_phy PPI_sva u_ppi_sva (
+        .arstn(arstn),
+        .clk_ppi(clk_ppi),
+        .data_ppi(data_ppi),
+        .clk_d_phy(clk_d_phy),
+        .data_d_phy(data_d_phy),
+        .clk_analog(clk_analog),
+        .data_analog(data_analog)
+    );
+
     initial begin
         uvm_config_db#(virtual tx_clk_ppi_if)::set(null, "uvm_test_top.clk_agent.clk_drv", "vif", clk_ppi_if);
         uvm_config_db#(virtual tx_clk_ppi_if)::set(null, "uvm_test_top.clk_agent.clk_mon", "vif", clk_ppi_if);
