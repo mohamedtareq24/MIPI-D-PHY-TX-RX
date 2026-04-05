@@ -1,3 +1,4 @@
+`timescale 1ns/1ps
 interface tx_data_analog_if();
     logic   tx_lane_clk_div_i;              // SERDES Clock  / 8
     logic   serializer_en_o;                // Serialzer Enable

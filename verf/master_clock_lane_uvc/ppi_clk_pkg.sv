@@ -1,3 +1,4 @@
+`timescale 1ns/1ps
 package ppi_clk_pkg;
     import uvm_pkg::*;
     `include "uvm_macros.svh"

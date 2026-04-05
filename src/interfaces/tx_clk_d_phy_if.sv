@@ -1,3 +1,4 @@
+`timescale 1ns/1ps
 interface tx_clk_d_phy_if();
     logic clk_LP_Dp_o;
     logic clk_LP_Dn_o;

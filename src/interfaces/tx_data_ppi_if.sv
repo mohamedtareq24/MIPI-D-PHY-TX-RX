@@ -1,3 +1,4 @@
+`timescale 1ns/1ps
 interface tx_data_ppi_if();
     // PPI Control 
     logic TxClkEsc_i;

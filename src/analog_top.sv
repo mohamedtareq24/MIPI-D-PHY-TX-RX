@@ -1,3 +1,4 @@
+`timescale 1ns/1ps
 module analog_top #(
     parameter int unsigned SERIAL_CLK_PER = 8
 ) (

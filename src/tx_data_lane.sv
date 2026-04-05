@@ -1,3 +1,4 @@
+`timescale 1ns/1ps
 module tx_data_lane(
     input logic arstn, // Asynchronous reset, active low
     tx_data_ppi_if.tx               ppi,

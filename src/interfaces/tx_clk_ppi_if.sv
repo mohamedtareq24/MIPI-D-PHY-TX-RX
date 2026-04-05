@@ -1,8 +1,11 @@
+`timescale 1ns/1ps
 interface tx_clk_ppi_if();
     // PPI Control
     logic TxClkEsc_i;
     logic ForceTXStopmode_i;
+    logic Enable_i;
     logic StopState_o;
+
 
     // PPI HS
     logic TxRequestHS_i;

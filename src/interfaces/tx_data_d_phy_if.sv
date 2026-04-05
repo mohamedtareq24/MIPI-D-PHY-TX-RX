@@ -1,3 +1,4 @@
+`timescale 1ns/1ps
 interface tx_data_d_phy_if();
     logic       tx_lane_LP_Dp_o;
     logic       tx_lane_LP_Dn_o;

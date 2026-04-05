@@ -1,3 +1,4 @@
+`timescale 1ns/1ps
 module tx_phy_top #(
     parameter int unsigned SERIAL_CLK_PER = 8
 ) (
