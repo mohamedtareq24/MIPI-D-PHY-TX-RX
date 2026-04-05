@@ -1,3 +1,4 @@
+`timescale 1ns/1ps
 `include "clock_lane_defs.svh"
 module tx_clock_lane (
     input logic arstn, // Asynchronous reset, active low
@@ -12,7 +13,7 @@ module tx_clock_lane (
         CLK_INIT,
         LP_CLK_STOP,
         HS_CLK_REQ,
-        HS_CLK_PRPR,
+//        HS_CLK_PRPR,
         HS_CLK_ZERO,
         HS_CLK_ACTIVE,
         HS_CLK_TRAIL,
@@ -38,14 +39,26 @@ module tx_clock_lane (
         if (!arstn) begin   
             timer_cntr <= `TX_INIT_TIME;
         end
+        // else if(next_state != state)
+        // begin
+        //     timer_done <= 0;
+        // end
+        else if (timer_load) begin
+            timer_cntr <= timer_value;
+        end
         else if (timer_cntr > 0) begin
             timer_cntr <= timer_cntr - 1;
         end
-        else if (timer_load ) begin
-            timer_cntr <= timer_value;
-        end
     end 
-    assign timer_done = (timer_cntr == 0) ? 1 : 0;
+
+    always_comb begin
+        if (timer_cntr == 0) begin
+            timer_done = 1;
+        end
+        else begin
+            timer_done = 0;
+        end
+    end
 
     // State transition logic
     always_ff @(posedge ppi.TxClkEsc_i or negedge arstn) begin
@@ -69,25 +82,15 @@ module tx_clock_lane (
         timer_value = 0;
         ppi.StopState_o = 0;
         ppi.TxUlpsActive_n_o = 1;
-        init_done = 0 ;
-        if (ppi.ForceTXStopmode_i && init_done && state != LP_CLK_STOP) begin
-            next_state = LP_CLK_STOP;
-        end
-        else
+
         case (state)
             CLK_INIT: begin
                 timer_value  = `TX_INIT_TIME;
-                d_phy.clk_LP_Dp_o   = 1;
-                d_phy.clk_LP_Dn_o   = 1;
-                init_done = 0;
+                d_phy.clk_LP_Dp_o   = 1'bZ;
+                d_phy.clk_LP_Dn_o   = 1'bZ;
                 ppi.StopState_o = 0;
-                if (timer_cntr == 1) begin
-                    timer_value = `LP_CLK_STOP_TIME;
-                    timer_load = 1;
-                end
-                else if (timer_cntr == 0) begin
+                if (timer_done) begin
                     next_state = LP_CLK_STOP;
-                    init_done = 1;
                     timer_value = `LP_CLK_STOP_TIME;
                     timer_load = 1;
                 end
@@ -100,18 +103,28 @@ module tx_clock_lane (
                 ppi.StopState_o = 1;
                 // timer_load =    0; // Stop the timer
                 // timer_value =   0;
-                if (timer_done) begin
+                if(ppi.ForceTXStopmode_i)
+                begin
+                    next_state = LP_CLK_STOP;
+                end 
+                else if (timer_done) 
+                begin
                     if (ppi.TxRequestHS_i) begin
                         next_state = HS_CLK_REQ;
+                        timer_load = 1;
+                        timer_value = `LP_CLK_REQ_TIME;
                     end
                     else if (ppi.TxUlpsClk_i) begin
                         next_state = ULPS_CLK_REQ;
+                        timer_load = 1;
+                        timer_value = `ULPS_CLK_REQ_TIME;
                     end
                     else begin
                         next_state = LP_CLK_STOP;
                     end
                 end
-                else begin
+                else 
+                begin
                     next_state = LP_CLK_STOP;
                 end
             end
@@ -119,36 +132,46 @@ module tx_clock_lane (
                 d_phy.clk_LP_Dp_o = 0;      
                 d_phy.clk_LP_Dn_o = 1;      
 
-                timer_value = `LP_CLK_REQ_TIME;
-                timer_load = 1;
-                if (timer_done & ppi.TxRequestHS_i) begin
-                    next_state = HS_CLK_PRPR;
+                if(ppi.ForceTXStopmode_i)
+                begin
+                    next_state = LP_CLK_STOP;
+                end
+                else if (timer_done & ppi.TxRequestHS_i) begin
+                    next_state = HS_CLK_ZERO;
+                    timer_load = 1;
+                    timer_value = `LP_CLK_ZERO_TIME;
                 end
                 else begin
                     next_state = HS_CLK_REQ;
                 end
             end
-            HS_CLK_PRPR: begin
-                d_phy.clk_LP_Dp_o = 0;
-                d_phy.clk_LP_Dn_o = 0;
+            // HS_CLK_PRPR: begin
+            //     d_phy.clk_LP_Dp_o = 0;
+            //     d_phy.clk_LP_Dn_o = 0;
 
-                timer_value = `LP_CLK_PRPR_TIME;
-                timer_load = 1;
-                if (timer_done & ppi.TxRequestHS_i) begin
-                    next_state = HS_CLK_ZERO;
-                end
-                else begin
-                    next_state = HS_CLK_PRPR;
-                end
-            end
+            //     if(ppi.ForceTXStopmode_i)
+            //     begin
+            //         next_state = LP_CLK_STOP;
+            //     end
+            //     else if (timer_done & ppi.TxRequestHS_i) begin
+            //         next_state = HS_CLK_ZERO;
+            //         timer_load = 1;
+            //         timer_value = `LP_CLK_ZERO_TIME;
+            //     end
+            //     else begin
+            //         next_state = HS_CLK_PRPR;
+            //     end
+            // end
             HS_CLK_ZERO: begin
                 d_phy.clk_LP_Dp_o = 0;
                 d_phy.clk_LP_Dn_o = 0;
                 // clk_HS_D_o  = 0;
 
-                timer_value = `LP_CLK_ZERO_TIME;
-                timer_load = 1;
-                if (timer_done & ppi.TxRequestHS_i) begin
+                if(ppi.ForceTXStopmode_i)
+                begin
+                    next_state = LP_CLK_STOP;
+                end
+                else if (timer_done & ppi.TxRequestHS_i) begin
                     next_state = HS_CLK_ACTIVE;
                 end
                 else begin
@@ -162,9 +185,15 @@ module tx_clock_lane (
                 ppi.TxReadyHS_o = 1;
                 ppi.TxByteClkHS_o = analog.clk_div; // Use the divided clock for byte clock
                 analog.ddr_clk_buff_en = 1; // Enable the DDR clock buffer
-                
-                if (!ppi.TxRequestHS_i) begin
+
+                if(ppi.ForceTXStopmode_i)
+                begin
+                    next_state = LP_CLK_STOP;
+                end
+                else if (!ppi.TxRequestHS_i) begin
                     next_state = HS_CLK_TRAIL; // Transition to trail state when request is deasserted
+                    timer_load = 1;
+                    timer_value = `LP_CLK_TRAIL_TIME;
                 end
                 else begin
                     next_state = HS_CLK_ACTIVE; // Stay in active state until request is deasserted
@@ -178,10 +207,14 @@ module tx_clock_lane (
                 ppi.TxReadyHS_o = 0;
                 ppi.TxByteClkHS_o = 0;
 
-                timer_value = `LP_CLK_TRAIL_TIME;
-                timer_load = 1;
-                if (timer_done) begin
+                if(ppi.ForceTXStopmode_i)
+                begin
+                    next_state = LP_CLK_STOP;
+                end
+                else if (timer_done) begin
                     next_state = LP_CLK_STOP; // Transition back to LP mode after trail time
+                    timer_load = 1;
+                    timer_value = `LP_CLK_STOP_TIME;
                 end
                 else begin
                     next_state = HS_CLK_TRAIL;
@@ -192,9 +225,11 @@ module tx_clock_lane (
                 d_phy.clk_LP_Dp_o = 1;
                 d_phy.clk_LP_Dn_o = 0;
 
-                timer_value = `ULPS_CLK_REQ_TIME;
-                timer_load = 1;
-                if (timer_done & ppi.TxUlpsClk_i) begin
+                if(ppi.ForceTXStopmode_i)
+                begin
+                    next_state = LP_CLK_STOP;
+                end
+                else if (timer_done & ppi.TxUlpsClk_i) begin
                     next_state = ULPS_CLK_ACTIVE;
                 end
                 else begin
@@ -207,9 +242,14 @@ module tx_clock_lane (
 
                 // You can wait for sometime before asserting ppi.TxUlpsActive_n_o 
                 ppi.TxUlpsActive_n_o = 0;
-                
-                if (ppi.TxUlpsExit_i) begin
+                if(ppi.ForceTXStopmode_i)
+                begin
+                    next_state = LP_CLK_STOP;
+                end
+                else if (ppi.TxUlpsExit_i) begin
                     next_state = ULPS_CLK_EXIT;
+                    timer_load = 1;
+                    timer_value = `ULPS_CLK_EXIT_TIME;
                 end
                 else begin
                     next_state = ULPS_CLK_ACTIVE;
@@ -220,11 +260,15 @@ module tx_clock_lane (
                 d_phy.clk_LP_Dn_o = 0;
 
                 ppi.TxUlpsActive_n_o = 1;
-                timer_value = `ULPS_CLK_EXIT_TIME; // Should be Twakeup + Some margin 
-                timer_load = 1;
-                
-                if (timer_done) begin
+
+                if(ppi.ForceTXStopmode_i)
+                begin
                     next_state = LP_CLK_STOP;
+                end
+                else if (timer_done) begin
+                    next_state = LP_CLK_STOP; 
+                    timer_load = 1;
+                    timer_value = `LP_CLK_STOP_TIME;
                 end
                 else begin
                     next_state = ULPS_CLK_EXIT;
