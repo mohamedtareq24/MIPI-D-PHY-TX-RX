@@ -54,9 +54,7 @@ class ppi_clk_ulps_seq extends ppi_clk_base_seq;
     virtual task body();
         ppi_clk_tr tr;
         tr = ppi_clk_tr::type_id::create("tr");
-        tr.transaction_type = ULPS_CLK;
-        start_item(tr);
-        finish_item(tr);
+        `uvm_do_with(tr, {transaction_type inside {ULPS_CLK};})
     endtask
 endclass
 
