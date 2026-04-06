@@ -17,10 +17,19 @@ class ppi_clk_test_base extends uvm_test;
         factory.print();
     endfunction 
 
+    // Enable the PHY 1st then apply the clock sequence
+    virtual task configure_phase(uvm_phase phase);
+        ppi_clk_en_seq en_seq;
+        phase.raise_objection(this);
+        en_seq = ppi_clk_en_seq::type_id::create("en_seq");
+        en_seq.start(clk_agent.clk_seqncr);
+        phase.drop_objection(this);
+    endtask
+
     task main_phase (uvm_phase phase);
         phase.raise_objection(this);
-        clk_seq =ppi_clk_base_seq::type_id::create("clk_seq");
-        clk_seq.start(clk_agent.clk_seq);
+        clk_seq = ppi_clk_base_seq::type_id::create("clk_seq");
+        clk_seq.start(clk_agent.clk_seqncr);
         phase.drop_objection(this);
     endtask
 endclass
@@ -51,14 +60,6 @@ class ppi_clk_test_hs extends ppi_clk_test_base;
         set_type_override_by_type(ppi_clk_base_seq::get_type(), ppi_clk_hs_seq::get_type());
         super.build_phase(phase);
     endfunction
-
-    virtual task configure_phase(uvm_phase phase);
-        ppi_clk_en_seq en_seq;
-        phase.raise_objection(this);
-        en_seq = ppi_clk_en_seq::type_id::create("en_seq");
-        en_seq.start(clk_agent.clk_seq);
-        phase.drop_objection(this);
-    endtask
 endclass
 
 class ppi_clk_test_ulps extends ppi_clk_test_base;

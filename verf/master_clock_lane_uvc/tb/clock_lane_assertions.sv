@@ -53,7 +53,7 @@ property StopState_TxUlpsClk; // When ULPS clock is asserted, the clock lane mus
 endproperty
 
 property TxUlpsClk_LP_STATE; // After ULPS clock is asserted, the LP state must be 10 followed by 00
-    @(posedge clk_ppi.TxClkEsc_i) disable iff (!arstn) $rose(clk_ppi.TxUlpsClk_i) |->  (LP_STATE == 2'b10)[->1] ##1 (LP_STATE == 2'b00);
+    @(posedge clk_ppi.TxClkEsc_i) disable iff (!arstn) $rose(clk_ppi.TxUlpsClk_i) |->  (LP_STATE == 2'b10)[->1] ##[1:$] (LP_STATE == 2'b00);
 endproperty
 
 
@@ -66,7 +66,7 @@ property TxUlpsExit_UlpsActiveNot; // Exit can only occur if currently in ULPS
 endproperty
 
 property TxUlpsExit_LP_STATE; // After ULPS exit, the LP state must be 00 followed by 10 for T_WAKEUP_TIME
-    @(posedge clk_ppi.TxClkEsc_i) disable iff (!arstn) ($rose(clk_ppi.TxUlpsExit_i) && LP_STATE == 2'b00)|-> (LP_STATE == 2'b10)[*WAKEUP_TIME_CYCLES_MIN:$] ##1 (LP_STATE == 2'b11) [->1];
+    @(posedge clk_ppi.TxClkEsc_i) disable iff (!arstn) ($rose(clk_ppi.TxUlpsExit_i) && LP_STATE == 2'b00)|-> (LP_STATE == 2'b10)[->WAKEUP_TIME_CYCLES_MIN:$] ##1 (LP_STATE == 2'b11) [->1];
 endproperty
 
 
