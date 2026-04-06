@@ -9,3 +9,6 @@ build/
 .Xil/
 verf/master_clock_lane_uvc/restore.tcl
 verf/master_clock_lane_uvc/restore.tcl.svcf
+verf/master_clock_lane_uvc/sim/ppi_clk_test_ulps/cov_work/scope/icc_00000000_16ae5580.ucm
+verf/master_clock_lane_uvc/sim/ppi_clk_test_ulps/cov_work/scope/ppi_clk_test_hs/icc_00000000_16ae5580.ucd
+verf/master_clock_lane_uvc/sim/ppi_clk_test_ulps/cov_work/scope/ppi_clk_test_ulps/icc_00000000_16ae5580.ucd
