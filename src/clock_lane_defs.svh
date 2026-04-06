@@ -8,3 +8,4 @@
 `define LP_CLK_TRAIL_TIME 52
 `define ULPS_CLK_REQ_TIME 1
 `define ULPS_CLK_EXIT_TIME 1
+`define ULPS_CLK_WAKEUP_TIME 20_000 // 1ms  scale for simulation

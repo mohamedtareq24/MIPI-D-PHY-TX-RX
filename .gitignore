@@ -7,3 +7,5 @@ build/
 *waves*
 *old
 .Xil/
+verf/master_clock_lane_uvc/restore.tcl
+verf/master_clock_lane_uvc/restore.tcl.svcf

@@ -249,7 +249,7 @@ module tx_clock_lane (
                 else if (ppi.TxUlpsExit_i) begin
                     next_state = ULPS_CLK_EXIT;
                     timer_load = 1;
-                    timer_value = `ULPS_CLK_EXIT_TIME;
+                    timer_value = `ULPS_CLK_WAKEUP_TIME;
                 end
                 else begin
                     next_state = ULPS_CLK_ACTIVE;
