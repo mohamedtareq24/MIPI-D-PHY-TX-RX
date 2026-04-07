@@ -16,6 +16,7 @@
 ../../src/interfaces/tx_data_analog_if.sv
 
 ../../src/analog_top.sv
+../../src/analog_top_xil.sv
 ../../src/tx_clock_lane.sv
 ../../src/tx_data_lane.sv
 ../../src/tx_d_phy.sv

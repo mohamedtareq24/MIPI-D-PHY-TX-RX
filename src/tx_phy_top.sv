@@ -1,4 +1,5 @@
 `timescale 1ns/1ps
+`define XIL_PHY
 module tx_phy_top #(
     parameter int unsigned SERIAL_CLK_PER = 8
 ) (
@@ -28,7 +29,23 @@ module tx_phy_top #(
         .data_analog(data_analog_if),
         .data_d_phy(data_d_phy_lp)
     );
-    // Analog top instance
+`ifdef XIL_PHY
+    // Xilinx primitive-backed analog top for gate-level compatible simulation.
+    analog_top_xil #(
+        .SERIAL_CLK_PER(SERIAL_CLK_PER)
+    ) u_analog_top (
+        .rstn_i(arstn),
+        .data_analog(data_analog_if),
+        .clk_analog(clk_analog_if),
+        .data_d_phy(data_d_phy_hs),
+        .clk_d_phy(clk_d_phy_hs),
+        .clk_i_o(),
+        .clk_q_o(),
+        .clk_div8_o(),
+        .pll_lock_o()
+    );
+`else
+    // Behavioral analog top for pure RTL simulation.
     analog_top #(
         .SERIAL_CLK_PER(SERIAL_CLK_PER)
     ) u_analog_top (
@@ -42,4 +59,5 @@ module tx_phy_top #(
         .clk_div8_o(),
         .pll_lock_o()
     );
+`endif
 endmodule
