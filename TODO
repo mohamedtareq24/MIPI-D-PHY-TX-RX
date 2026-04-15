@@ -9,13 +9,14 @@
 
  
 
-## Simulation and Modeling
-- [ ] Analog PHY simulation model (Refer to UG471 & UG472)
+## Simulation and Modeling 
+- [x] Analog PHY simulation model for Clock lane (Refer to UG471 & UG472)
+- [] Analog PHY simulation model for Data Lane (Refer to UG471 & UG472)
 
 ## Verification Tasks
 
 - [] Verification of the TX-PHY
-  - [ ] Verification Plan & Documented Feature Extraction
-  - [ ] Assertions module for the PPI signals
-  - [ ] Assertions for TX-PHY
-  - [ ] Verification Environment components
+  - [] Verification Plan & Documented Feature Extraction
+  - [x] Assertions module for the PPI signals
+  - [] Assertions for TX-PHY
+  - [x] Verification Environment components
