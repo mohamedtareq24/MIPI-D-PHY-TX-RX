@@ -1,0 +1,80 @@
+# QuestaSim Makefile for the RX PHY env (HS-receive smoke).
+# Run from verf/rx/top (run.f paths are relative to this dir).
+#
+#   make -f Makefile.questa sim                 # compile + open GUI + run
+#   make -f Makefile.questa cli                 # compile + batch run (-c)
+#   make -f Makefile.questa clean
+#
+# UVM is compiled from the QuestaSim source tree (the -uvm switch is not used).
+
+VLIB ?= vlib
+VMAP ?= vmap
+VLOG ?= vlog
+VSIM ?= vsim
+
+QUESTA_BIN := $(dir $(shell command -v vsim))
+MTI_HOME   ?= $(abspath $(QUESTA_BIN)/..)
+UVM_VER    ?= uvm-1.2
+UVM_ARCH   ?= linux_x86_64
+UVM_SRC    ?= $(MTI_HOME)/verilog_src/$(UVM_VER)/src
+UVM_DPI    ?= $(MTI_HOME)/$(UVM_VER)/$(UVM_ARCH)/uvm_dpi
+
+TOP      ?= rx_phy_tb_top
+TEST     ?= rx_phy_base_test
+SEED     ?= 1
+
+FILELIST ?= ./tb/run.f
+
+QUESTA_DIR ?= questa
+SCRATCH    ?= $(QUESTA_DIR)/scratch
+WORK_LIB   ?= $(SCRATCH)/work
+
+UVM_LOG     ?= $(SCRATCH)/uvm_compile.log
+COMPILE_LOG ?= $(SCRATCH)/compile.log
+SIM_LOG     ?= $(SCRATCH)/sim.log
+
+VLOG_OPTS ?= -64 -sv -mfcu -work $(WORK_LIB) +incdir+$(UVM_SRC)
+
+WLF        ?= $(SCRATCH)/$(TEST).wlf
+WAVE_SCOPE ?= /*
+WAVE_LOG   ?= log -r $(WAVE_SCOPE)
+WAVE_ADD   ?= add wave -r $(WAVE_SCOPE)
+
+VSIM_OPTS ?= -64 -sv_seed $(SEED) -L $(WORK_LIB) -sv_lib $(UVM_DPI) \
+             -voptargs=+acc -wlf $(WLF) \
+             +UVM_TESTNAME=$(TEST) +UVM_VERBOSITY=UVM_MEDIUM
+
+.PHONY: sim cli wave compile uvm lib clean help
+
+help:
+	@echo "Targets:"
+	@echo "  make -f Makefile.questa sim TEST=<uvm_test> SEED=<n>   # GUI"
+	@echo "  make -f Makefile.questa cli TEST=<uvm_test> SEED=<n>   # batch"
+	@echo "  make -f Makefile.questa wave                           # view saved WLF"
+	@echo "  make -f Makefile.questa clean"
+
+lib:
+	@mkdir -p $(SCRATCH)
+	@test -d $(WORK_LIB) || $(VLIB) $(WORK_LIB)
+	@$(VMAP) work $(WORK_LIB)
+
+uvm: lib
+	$(VLOG) -64 -sv -mfcu -work $(WORK_LIB) +incdir+$(UVM_SRC) \
+		$(UVM_SRC)/uvm_pkg.sv -l $(UVM_LOG)
+
+compile: uvm
+	$(VLOG) $(VLOG_OPTS) -f $(FILELIST) -l $(COMPILE_LOG)
+
+sim: compile
+	$(VSIM) -gui $(VSIM_OPTS) work.$(TOP) \
+		-do "$(WAVE_LOG); $(WAVE_ADD); run -all" -l $(SIM_LOG)
+
+cli: compile
+	$(VSIM) -c $(VSIM_OPTS) work.$(TOP) \
+		-do "$(WAVE_LOG); run -all; quit -f" -l $(SIM_LOG)
+
+wave:
+	$(VSIM) -view $(WLF) -do "$(WAVE_ADD)"
+
+clean:
+	@rm -rf $(QUESTA_DIR) transcript vsim.wlf *.log

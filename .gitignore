@@ -1,5 +1,6 @@
 verf/**/.simvision/
 build/
+build_*
 *.log
 *.key
 *.history
@@ -7,8 +8,17 @@ build/
 *waves*
 *old
 .Xil/
-verf/master_clock_lane_uvc/restore.tcl
-verf/master_clock_lane_uvc/restore.tcl.svcf
-verf/master_clock_lane_uvc/sim/ppi_clk_test_ulps/cov_work/scope/icc_00000000_16ae5580.ucm
-verf/master_clock_lane_uvc/sim/ppi_clk_test_ulps/cov_work/scope/ppi_clk_test_hs/icc_00000000_16ae5580.ucd
-verf/master_clock_lane_uvc/sim/ppi_clk_test_ulps/cov_work/scope/ppi_clk_test_ulps/icc_00000000_16ae5580.ucd
+questa/
+**/questa/
+*.wlf
+transcript
+vish_stacktrace.vstf
+modelsim.ini
+.claude/
+
+# AI agent instructions — never push these
+AGENTS.md
+.github/copilot-instructions.md
+
+# Local docs (spec PDFs, plans)
+docs/

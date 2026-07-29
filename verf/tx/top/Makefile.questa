@@ -1,0 +1,127 @@
+# QuestaSim Makefile for the integrated TX-PHY environment (behavioral analog).
+# Run from verf/tx/top (run.f paths are relative to this dir).
+#
+#   make -f Makefile.questa sim                 # compile + open GUI + run
+#   make -f Makefile.questa cli                 # compile + batch run (-c)
+#   make -f Makefile.questa TEST=<uvm_test> SEED=<n> sim
+#   make -f Makefile.questa FAST=1 sim          # short clock-lane init
+#   make -f Makefile.questa clean
+#
+# QuestaSim project lives in   questa/
+# Work library is created in   questa/scratch/work
+#
+# UVM is compiled from the QuestaSim source tree (the -uvm switch is not used).
+
+VLIB ?= vlib
+VMAP ?= vmap
+VLOG ?= vlog
+VSIM ?= vsim
+
+# QuestaSim install (derived from the vsim on PATH) and UVM bits
+QUESTA_BIN := $(dir $(shell command -v vsim))
+MTI_HOME   ?= $(abspath $(QUESTA_BIN)/..)
+UVM_VER    ?= uvm-1.2
+UVM_ARCH   ?= linux_x86_64
+UVM_SRC    ?= $(MTI_HOME)/verilog_src/$(UVM_VER)/src
+UVM_DPI    ?= $(MTI_HOME)/$(UVM_VER)/$(UVM_ARCH)/uvm_dpi
+
+TOP      ?= tx_phy_tb_top
+TEST     ?= tx_phy_smoke_test
+SEED     ?= 1
+COVERAGE ?= 0
+ANALOG   ?= beh
+
+# Set FAST=1 for a quick smoke (shrinks the clock-lane init count).
+FAST     ?= 0
+FAST_DEF :=
+ifeq ($(FAST),1)
+FAST_DEF := +define+TX_INIT_TIME=40
+endif
+
+FILELIST ?= ./tb/run.f
+
+# QuestaSim project / scratch area
+QUESTA_DIR ?= questa
+SCRATCH    ?= $(QUESTA_DIR)/scratch
+WORK_LIB   ?= $(SCRATCH)/work
+
+UVM_LOG     ?= $(SCRATCH)/uvm_compile.log
+COMPILE_LOG ?= $(SCRATCH)/compile.log
+SIM_LOG     ?= $(SCRATCH)/sim.log
+
+# Compile options (+incdir for uvm_macros.svh)
+VLOG_OPTS ?= -64 -sv -mfcu -work $(WORK_LIB) +incdir+$(UVM_SRC)
+
+VLOG_DEFINE_OPTS :=
+ifeq ($(ANALOG),xil)
+VLOG_DEFINE_OPTS += +define+XIL_PHY
+endif
+
+# Waveform database (WLF) and what to log/show
+WLF        ?= $(SCRATCH)/$(TEST).wlf
+WAVE_SCOPE ?= /*
+# Signals logged to the WLF (recursively from the top by default)
+WAVE_LOG   ?= log -r $(WAVE_SCOPE)
+# Signals added to the Wave window (GUI only)
+WAVE_ADD   ?= add wave -r $(WAVE_SCOPE)
+
+# Simulation options (link the prebuilt UVM DPI shared lib).
+# -voptargs=+acc keeps signals visible/loggable through optimization.
+VSIM_OPTS ?= -64 -sv_seed $(SEED) -L $(WORK_LIB) -sv_lib $(UVM_DPI) \
+             -voptargs=+acc -wlf $(WLF) \
+             +UVM_TESTNAME=$(TEST) +UVM_VERBOSITY=UVM_MEDIUM
+
+COV_SAVE :=
+ifeq ($(COVERAGE),1)
+VLOG_OPTS += +cover
+VSIM_OPTS += -coverage
+COV_SAVE  := coverage save -onexit $(SCRATCH)/$(TEST).ucdb;
+endif
+
+.PHONY: sim cli wave compile uvm lib clean help
+
+help:
+	@echo "Targets:"
+	@echo "  make -f Makefile.questa sim TEST=<uvm_test> SEED=<n>   # GUI"
+	@echo "  make -f Makefile.questa cli TEST=<uvm_test> SEED=<n>   # batch"
+	@echo "  make -f Makefile.questa FAST=1 sim                     # quick smoke"
+	@echo "  make -f Makefile.questa ANALOG=xil sim                 # Xilinx analog model"
+	@echo "  make -f Makefile.questa COVERAGE=1 cli                 # save UCDB"
+	@echo "  make -f Makefile.questa wave                           # view saved WLF"
+	@echo "  make -f Makefile.questa WAVE_SCOPE=/tx_phy_tb_top/dut/* sim   # scope waves"
+	@echo "  make -f Makefile.questa clean"
+	@echo ""
+	@echo "MTI_HOME=$(MTI_HOME)"
+	@echo "UVM_SRC =$(UVM_SRC)"
+	@echo "UVM_DPI =$(UVM_DPI).so"
+
+# Create work library inside questa/scratch
+lib:
+	@mkdir -p $(SCRATCH)
+	@test -d $(WORK_LIB) || $(VLIB) $(WORK_LIB)
+	@$(VMAP) work $(WORK_LIB)
+
+# Compile UVM from the QuestaSim source tree into the work library
+uvm: lib
+	$(VLOG) -64 -sv -mfcu -work $(WORK_LIB) +incdir+$(UVM_SRC) \
+		$(UVM_SRC)/uvm_pkg.sv -l $(UVM_LOG)
+
+compile: uvm
+	$(VLOG) $(VLOG_OPTS) $(VLOG_DEFINE_OPTS) $(FAST_DEF) -f $(FILELIST) -l $(COMPILE_LOG)
+
+# Open QuestaSim GUI and run the simulation (logs signals + populates Wave)
+sim: compile
+	$(VSIM) -gui $(VSIM_OPTS) work.$(TOP) \
+		-do "$(WAVE_LOG); $(WAVE_ADD); $(COV_SAVE) run -all" -l $(SIM_LOG)
+
+# Batch (command-line) run, no GUI (logs signals to the WLF for later viewing)
+cli: compile
+	$(VSIM) -c $(VSIM_OPTS) work.$(TOP) \
+		-do "$(WAVE_LOG); $(COV_SAVE) run -all; quit -f" -l $(SIM_LOG)
+
+# Open the saved WLF from a previous batch (cli) run
+wave:
+	$(VSIM) -view $(WLF) -do "$(WAVE_ADD)"
+
+clean:
+	@rm -rf $(QUESTA_DIR) transcript vsim.wlf *.log
